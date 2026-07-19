@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const schedules = [
-  ["08.24", "SUN", "TOKYO", "Shibuya REX", "ONEMAN LIVE 2026 \"SILENCE OF ROSES\""],
-  ["09.06", "SAT", "OSAKA", "OSAKA MUSE", "ECLIPSE TOUR 2026"],
-  ["09.21", "SUN", "NAGOYA", "ell.FITS ALL", "ECLIPSE TOUR 2026"],
-];
+import Link from "next/link";
+import { getDemoUpcomingSchedules, type Schedule } from "@/lib/schedules";
 
 const members = [
   ["REI", "VOCAL", "The voice that turns silence into a scar."],
@@ -19,9 +15,9 @@ type Language = "ja" | "en";
 
 const copy = {
   ja: {
-    nav: ["スケジュール", "ニュース", "メディア", "プロフィール", "コンタクト"], menu: "メニュー", heroLabel: "ヴィジュアルロックバンド · 東京",
-    heroDescription: <>美しさと轟音のあいだ。<br />LACRIMAの新しい章が始まります。</>, upcoming: "次回のライヴ", scroll: "SCROLL TO DESCEND",
-    scheduleLabel: "01 / ライヴスケジュール", scheduleButton: "すべてのスケジュール", calendar: "Google Calendar連携予定 · スケジュールは管理画面から即時更新されます。",
+    nav: ["スケジュール", "ニュース", "メディア", "プロフィール", "コンタクト"], menu: "メニュー",
+    heroDescription: <>美しさと轟音のあいだ。<br />LACRIMAの新しい章が始まります。</>, upcoming: "ライヴスケジュールを見る",
+    scheduleLabel: "01 / ライヴスケジュール", scheduleButton: "MORE",
     newsLabel: "02 / 最新ニュース", news: [["2026.07.12", "RELEASE", "New single ‘Lily in the Ashes’ 配信開始"], ["2026.07.01", "LIVE", "ECLIPSE TOUR 2026 開催決定"], ["2026.06.18", "MEDIA", "最新アーティスト写真を公開しました"]],
     mediaLabel: "03 / ビデオ & フォト", mediaDescription: <>ライヴの余韻と、新しい映像たち。<br />LACRIMAの世界をスクリーンの向こうで。</>, youtube: "YOUTUBEで見る", youtubeNote: "YouTubeに公開した映像が自動で表示されます。",
     profileLabel: "04 / プロフィール", history: "バンドヒストリー", historyText: <>結成 · 1st single ‘Veil’ リリース <span>—</span> <b>2023</b> 全国12都市ツアー <span>—</span> <b>2026</b> NEW ERA BEGINS</>,
@@ -29,9 +25,9 @@ const copy = {
     videoInfo: "オフィシャルミュージックビデオ", videoDescription: "オフィシャルMVの表示エリアです。公開時には、管理画面で登録したYouTube動画をこの場所で再生できます。", videoButton: "YOUTUBE連携準備中", openMenu: "メニューを開く", closeMenu: "メニューを閉じる", closeVideo: "動画ウィンドウを閉じる",
   },
   en: {
-    nav: ["SCHEDULE", "NEWS", "MEDIA", "PROFILE", "CONTACT"], menu: "MENU", heroLabel: "VISUAL ROCK BAND · TOKYO",
-    heroDescription: <>Between beauty and distortion.<br />A new chapter of LACRIMA begins.</>, upcoming: "UPCOMING LIVE", scroll: "SCROLL TO DESCEND",
-    scheduleLabel: "01 / LIVE SCHEDULE", scheduleButton: "ALL SCHEDULE", calendar: "Google Calendar integration coming soon · Schedules update instantly from the admin panel.",
+    nav: ["SCHEDULE", "NEWS", "MEDIA", "PROFILE", "CONTACT"], menu: "MENU",
+    heroDescription: <>Between beauty and distortion.<br />A new chapter of LACRIMA begins.</>, upcoming: "VIEW LIVE SCHEDULE",
+    scheduleLabel: "01 / LIVE SCHEDULE", scheduleButton: "MORE",
     newsLabel: "02 / LATEST NEWS", news: [["2026.07.12", "RELEASE", "New single ‘Lily in the Ashes’ is out now"], ["2026.07.01", "LIVE", "ECLIPSE TOUR 2026 announced"], ["2026.06.18", "MEDIA", "New artist photography released"]],
     mediaLabel: "03 / VIDEO & PHOTO", mediaDescription: <>The afterglow of the stage, and new moving images.<br />Step inside the world of LACRIMA.</>, youtube: "WATCH ON YOUTUBE", youtubeNote: "New YouTube uploads will appear here automatically.",
     profileLabel: "04 / PROFILE", history: "OUR HISTORY", historyText: <>Formed · debut single ‘Veil’ <span>—</span> <b>2023</b> 12-city tour across Japan <span>—</span> <b>2026</b> NEW ERA BEGINS</>,
@@ -44,6 +40,7 @@ export default function Home() {
   const [language, setLanguage] = useState<Language>("ja");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [schedules, setSchedules] = useState<Schedule[]>(getDemoUpcomingSchedules);
 
   useEffect(() => {
     const languageTimer = window.setTimeout(() => {
@@ -55,6 +52,13 @@ export default function Home() {
 
   useEffect(() => { document.documentElement.lang = language; }, [language]);
 
+  useEffect(() => {
+    fetch("/api/schedules")
+      .then((response) => response.ok ? response.json() : [])
+      .then((items: Schedule[]) => { if (items.length) setSchedules(items); })
+      .catch(() => undefined);
+  }, []);
+
   const t = copy[language];
   const closeMenu = () => setIsMenuOpen(false);
 
@@ -63,23 +67,22 @@ export default function Home() {
       <nav className="nav" aria-label="Main menu">
         <a className="logo" href="#home">LACRIMA</a>
         <div className="nav-links">
-          <a href="#schedule">{t.nav[0]}</a><a href="#news">{t.nav[1]}</a><a href="#media">{t.nav[2]}</a><a href="#profile">{t.nav[3]}</a><a href="#contact">{t.nav[4]}</a>
+          <Link href="/schedule">{t.nav[0]}</Link><a href="#news">{t.nav[1]}</a><a href="#media">{t.nav[2]}</a><a href="#profile">{t.nav[3]}</a><a href="#contact">{t.nav[4]}</a>
         </div>
         <div className="language-switcher" aria-label="Language selector"><button type="button" className={language === "ja" ? "active" : ""} onClick={() => setLanguage("ja")}>JP</button><span>/</span><button type="button" className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button></div>
         <button className="menu" type="button" onClick={() => setIsMenuOpen(true)} aria-label={t.openMenu}>{t.menu}</button>
       </nav>
-      <div className="hero-copy"><p className="eyebrow">{t.heroLabel}</p><h1>BEAUTY<br /><em>IN THE</em> DARK.</h1><p className="hero-description">{t.heroDescription}</p><a className="text-link" href="#schedule">{t.upcoming} <span>↘</span></a></div>
-      <p className="scroll">{t.scroll} <span>↓</span></p>
+      <div className="hero-copy"><h1>BEAUTY<br /><em>IN THE</em> DARK.</h1><p className="hero-description">{t.heroDescription}</p><Link className="text-link" href="/schedule">{t.upcoming} <span>→</span></Link></div>
     </section>
 
     <div className={`mobile-menu ${isMenuOpen ? "is-open" : ""}`} aria-hidden={!isMenuOpen}>
       <button className="mobile-menu-close" type="button" onClick={closeMenu} aria-label={t.closeMenu}>×</button><a className="logo" href="#home" onClick={closeMenu}>LACRIMA</a>
-      <div className="mobile-menu-links"><a href="#schedule" onClick={closeMenu}>{t.nav[0]}</a><a href="#news" onClick={closeMenu}>{t.nav[1]}</a><a href="#media" onClick={closeMenu}>{t.nav[2]}</a><a href="#profile" onClick={closeMenu}>{t.nav[3]}</a><a href="#contact" onClick={closeMenu}>{t.nav[4]}</a></div><p>{t.heroLabel}</p>
+      <div className="mobile-menu-links"><Link href="/schedule" onClick={closeMenu}>{t.nav[0]}</Link><a href="#news" onClick={closeMenu}>{t.nav[1]}</a><a href="#media" onClick={closeMenu}>{t.nav[2]}</a><a href="#profile" onClick={closeMenu}>{t.nav[3]}</a><a href="#contact" onClick={closeMenu}>{t.nav[4]}</a></div>
     </div>
 
     <section className="section schedule-section" id="schedule"><div className="section-heading"><p>{t.scheduleLabel}</p><h2>THE NEXT<br /><i>RITUALS</i></h2></div><div className="schedule-list">
-      {schedules.map(([date, day, city, venue, title]) => <article className="schedule-item" key={date}><div className="date"><strong>{date}</strong><span>{day}</span></div><div><p className="city">{city}</p><h3>{venue}</h3><p>{title}</p></div><a href="#contact" aria-label={`${venue} details`}>↗</a></article>)}
-      <a className="outline-button" href="#contact">{t.scheduleButton} <span>→</span></a><p className="integration-note">{t.calendar}</p>
+      {schedules.slice(0, 3).map((schedule) => { const date = new Date(schedule.start); return <Link className="schedule-item" href={`/schedule/${encodeURIComponent(schedule.id)}`} key={schedule.id}><div className="date"><strong>{new Intl.DateTimeFormat("en-US", { month: "2-digit", day: "2-digit" }).format(date)}</strong><span>{new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date).toUpperCase()}</span></div><div><p className="city">{schedule.city}</p><h3>{schedule.venue}</h3><p>{schedule.title}</p></div><span className="schedule-arrow" aria-hidden="true">↗</span></Link>; })}
+      <Link className="outline-button" href="/schedule">{t.scheduleButton} <span>→</span></Link>
     </div></section>
 
     <section className="section news-section" id="news"><div className="section-heading"><p>{t.newsLabel}</p><h2>FROM<br /><i>THE VEIL</i></h2></div><div className="news-list">{t.news.map(([date, category, title]) => <a href="#contact" className="news-item" key={title}><time>{date}</time><b>{category}</b><h3>{title}</h3><span>→</span></a>)}</div></section>
