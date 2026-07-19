@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://band-official.vercel.app"),
   title: "LACRIMA | Visual Rock Band",
   description: "LACRIMA official website — schedule, news, media and more.",
   openGraph: {
