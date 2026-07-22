@@ -5,6 +5,7 @@ const navigation = [
   { href: "/news", label: "ニュース" },
   { href: "/media", label: "メディア" },
   { href: "/profile", label: "プロフィール" },
+  { href: "/goods", label: "グッズ" },
   { href: "/contact", label: "お問い合わせ" },
 ];
 
