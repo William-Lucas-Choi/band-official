@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteNavigation } from "@/app/components/SiteNavigation";
 import { getUpcomingSchedules } from "@/lib/schedules";
 
 export const revalidate = 900;
@@ -7,7 +8,7 @@ export default async function SchedulePage() {
   const schedules = await getUpcomingSchedules();
 
   return <main className="schedule-page">
-    <header className="inner-nav"><Link className="logo" href="/">LACRIMA</Link><Link href="/" className="back-link">← HOME</Link></header>
+    <SiteNavigation active="/schedule" />
     <section className="schedule-hero"><p className="eyebrow">LIVE SCHEDULE</p><h1>UPCOMING<br /><i>RITUALS.</i></h1><p>今後のライヴスケジュール / Upcoming live dates</p></section>
     <section className="all-schedules" aria-label="Upcoming live schedule">
       {schedules.map((schedule) => {
