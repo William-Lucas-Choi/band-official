@@ -76,7 +76,7 @@ export default function Home() {
       <nav className="nav" aria-label="Main menu">
         <a className="logo" href="#home">LACRIMA</a>
         <div className="nav-links">
-          <Link href="/schedule">{t.nav[0]}</Link><Link href="/news">{t.nav[1]}</Link><Link href="/media">{t.nav[2]}</Link><Link href="/profile">{t.nav[3]}</Link><Link href="/goods">{t.nav[4]}</Link><Link href="/contact">{t.nav[5]}</Link>
+          <Link href="/schedule">{t.nav[0]}</Link><Link href="/news">{t.nav[1]}</Link><Link href="/media">{t.nav[2]}</Link><Link href="/profile">{t.nav[3]}</Link><a href="https://thebase.com/" target="_blank" rel="noreferrer">{t.nav[4]}</a><Link href="/contact">{t.nav[5]}</Link>
         </div>
         <div className="language-switcher" aria-label="Language selector"><button type="button" className={language === "ja" ? "active" : ""} onClick={() => setLanguage("ja")}>JP</button><span>/</span><button type="button" className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button></div>
         <button className="menu" type="button" onClick={() => setIsMenuOpen(true)} aria-label={t.openMenu}>{t.menu}</button>
@@ -86,7 +86,7 @@ export default function Home() {
 
     <div className={`mobile-menu ${isMenuOpen ? "is-open" : ""}`} aria-hidden={!isMenuOpen}>
       <button className="mobile-menu-close" type="button" onClick={closeMenu} aria-label={t.closeMenu}>×</button><a className="logo" href="#home" onClick={closeMenu}>LACRIMA</a>
-      <div className="mobile-menu-links"><Link href="/schedule" onClick={closeMenu}>{t.nav[0]}</Link><Link href="/news" onClick={closeMenu}>{t.nav[1]}</Link><Link href="/media" onClick={closeMenu}>{t.nav[2]}</Link><Link href="/profile" onClick={closeMenu}>{t.nav[3]}</Link><Link href="/goods" onClick={closeMenu}>{t.nav[4]}</Link><Link href="/contact" onClick={closeMenu}>{t.nav[5]}</Link></div>
+      <div className="mobile-menu-links"><Link href="/schedule" onClick={closeMenu}>{t.nav[0]}</Link><Link href="/news" onClick={closeMenu}>{t.nav[1]}</Link><Link href="/media" onClick={closeMenu}>{t.nav[2]}</Link><Link href="/profile" onClick={closeMenu}>{t.nav[3]}</Link><a href="https://thebase.com/" target="_blank" rel="noreferrer" onClick={closeMenu}>{t.nav[4]}</a><Link href="/contact" onClick={closeMenu}>{t.nav[5]}</Link></div>
     </div>
 
     <section className="section schedule-section" id="schedule"><div className="section-heading"><p>{t.scheduleLabel}</p><h2>THE NEXT<br /><i>RITUALS</i></h2></div><div className="schedule-list">
