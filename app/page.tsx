@@ -1,14 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getDemoUpcomingSchedules, type Schedule } from "@/lib/schedules";
 
 const members = [
-  ["REI", "VOCAL", "The voice that turns silence into a scar."],
-  ["KAI", "GUITAR", "Melody, distortion, devotion."],
-  ["YU", "BASS", "A pulse beneath the velvet."],
-  ["SENA", "DRUMS", "Beautifully merciless rhythm."],
+  { name: "REI", role: "VOCAL", quote: "The voice that turns silence into a scar.", image: "/member-rei.png" },
+  { name: "KAI", role: "GUITAR", quote: "Melody, distortion, devotion.", image: "/member-kai.png" },
+  { name: "YU", role: "BASS", quote: "A pulse beneath the velvet.", image: "/member-yu.png" },
+  { name: "SENA", role: "DRUMS", quote: "Beautifully merciless rhythm.", image: "/member-sena.png" },
 ];
 
 type Language = "ja" | "en";
@@ -20,7 +21,7 @@ const copy = {
     scheduleLabel: "01 / ライヴスケジュール", scheduleButton: "MORE",
     newsLabel: "02 / 最新ニュース", news: [["2026.07.12", "RELEASE", "New single ‘Lily in the Ashes’ 配信開始"], ["2026.07.01", "LIVE", "ECLIPSE TOUR 2026 開催決定"], ["2026.06.18", "MEDIA", "最新アーティスト写真を公開しました"]],
     mediaLabel: "03 / ビデオ & フォト", mediaDescription: <>ライヴの余韻と、新しい映像たち。<br />LACRIMAの世界をスクリーンの向こうで。</>, youtube: "YOUTUBEで見る", youtubeNote: "YouTubeに公開した映像が自動で表示されます。",
-    profileLabel: "04 / プロフィール", history: "バンドヒストリー", historyText: <>結成 · 1st single ‘Veil’ リリース <span>—</span> <b>2023</b> 全国12都市ツアー <span>—</span> <b>2026</b> NEW ERA BEGINS</>,
+    profileLabel: "04 / プロフィール",
     contactLabel: "05 / コンタクト & グッズ", contactDescription: <>出演依頼・取材・ファンレターはこちらから。<br />オフィシャルグッズはBASEストアでお求めいただけます。</>, contact: "お問い合わせ", goods: "オフィシャルグッズ",
     videoInfo: "オフィシャルミュージックビデオ", videoDescription: "オフィシャルMVの表示エリアです。公開時には、管理画面で登録したYouTube動画をこの場所で再生できます。", videoButton: "YOUTUBE連携準備中", openMenu: "メニューを開く", closeMenu: "メニューを閉じる", closeVideo: "動画ウィンドウを閉じる",
   },
@@ -30,7 +31,7 @@ const copy = {
     scheduleLabel: "01 / LIVE SCHEDULE", scheduleButton: "MORE",
     newsLabel: "02 / LATEST NEWS", news: [["2026.07.12", "RELEASE", "New single ‘Lily in the Ashes’ is out now"], ["2026.07.01", "LIVE", "ECLIPSE TOUR 2026 announced"], ["2026.06.18", "MEDIA", "New artist photography released"]],
     mediaLabel: "03 / VIDEO & PHOTO", mediaDescription: <>The afterglow of the stage, and new moving images.<br />Step inside the world of LACRIMA.</>, youtube: "WATCH ON YOUTUBE", youtubeNote: "New YouTube uploads will appear here automatically.",
-    profileLabel: "04 / PROFILE", history: "OUR HISTORY", historyText: <>Formed · debut single ‘Veil’ <span>—</span> <b>2023</b> 12-city tour across Japan <span>—</span> <b>2026</b> NEW ERA BEGINS</>,
+    profileLabel: "04 / PROFILE",
     contactLabel: "05 / CONTACT & GOODS", contactDescription: <>For booking, press, and fan mail.<br />Official goods are available on our BASE store.</>, contact: "CONTACT US", goods: "OFFICIAL GOODS",
     videoInfo: "OFFICIAL MUSIC VIDEO", videoDescription: "This is the official music video area. Once connected, a YouTube video registered in the admin will play here.", videoButton: "YOUTUBE CONNECTION SOON", openMenu: "Open menu", closeMenu: "Close menu", closeVideo: "Close video window",
   },
@@ -89,7 +90,7 @@ export default function Home() {
 
     <section className="media" id="media"><div className="media-video"><button type="button" onClick={() => setIsVideoOpen(true)} aria-label={t.videoInfo}>▶</button><p>{t.videoInfo}</p><h2>LILY IN THE<br /><i>ASHES</i></h2></div><div className="media-copy"><p className="eyebrow">{t.mediaLabel}</p><h2>TAKE A<br />LOOK <i>INSIDE.</i></h2><p>{t.mediaDescription}</p><a className="text-link" href="#contact">{t.youtube} <span>↗</span></a><small>{t.youtubeNote}</small></div></section>
 
-    <section className="section profile-section" id="profile"><div className="section-heading"><p>{t.profileLabel}</p><h2>FOUR SOULS,<br /><i>ONE ECLIPSE.</i></h2></div><div className="member-grid">{members.map(([name, role, quote], index) => <article className={`member member-${index + 1}`} key={name}><div className="member-portrait"><span>{String(index + 1).padStart(2, "0")}</span></div><p>{role}</p><h3>{name}</h3><blockquote>{quote}</blockquote></article>)}</div><div className="history"><p className="eyebrow">{t.history}</p><p><b>2021</b> {t.historyText}</p></div></section>
+    <section className="section profile-section" id="profile"><div className="section-heading"><p>{t.profileLabel}</p><h2>FOUR SOULS,<br /><i>ONE ECLIPSE.</i></h2></div><div className="member-grid">{members.map(({ name, role, quote, image }, index) => <article className={`member member-${index + 1}`} key={name}><div className="member-portrait"><Image src={image} alt={`${name}, ${role}`} fill sizes="(max-width: 760px) 50vw, 25vw" /><span>{String(index + 1).padStart(2, "0")}</span></div><p>{role}</p><h3>{name}</h3><blockquote>{quote}</blockquote></article>)}</div></section>
 
     <section className="contact" id="contact"><p className="eyebrow">{t.contactLabel}</p><h2>LET&apos;S MAKE<br />SOME <i>NOISE.</i></h2><p>{t.contactDescription}</p><div><a className="solid-button" href="mailto:contact@lacrima-band.jp">{t.contact} <span>↗</span></a><a className="outline-button light" href="https://thebase.com/" target="_blank" rel="noreferrer">{t.goods} <span>↗</span></a></div></section>
     <footer><a className="logo" href="#home">LACRIMA</a><p>© 2026 LACRIMA. ALL RIGHTS RESERVED.</p><div><a href="#contact">INSTAGRAM</a><a href="#contact">YOUTUBE</a><a href="#contact">X / TWITTER</a></div></footer>
