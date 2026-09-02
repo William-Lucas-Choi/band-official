@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabase";
+import { unstable_cache } from "next/cache";
 
 export type Schedule = {
   id: string;
@@ -59,6 +60,35 @@ async function getSupabaseUpcomingSchedules(): Promise<Schedule[] | null> {
   }));
 }
 
+function toScheduleFromLiveEvent(event: LiveEventRow): Schedule {
+  return {
+    id: event.id,
+    title: event.title,
+    start: event.starts_at,
+    end: event.ends_at ?? undefined,
+    venue: event.venue,
+    city: event.city.toUpperCase(),
+    description: event.description,
+    ticketUrl: event.ticket_url ?? undefined,
+  };
+}
+
+async function getSupabaseSchedule(id: string): Promise<Schedule | null> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("live_events")
+    .select("id, title, starts_at, ends_at, venue, city, description, ticket_url")
+    .eq("id", id)
+    .eq("published", true)
+    .gte("starts_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return toScheduleFromLiveEvent(data as LiveEventRow);
+}
+
 type GoogleEvent = {
   id: string;
   summary?: string;
@@ -108,6 +138,25 @@ export async function getUpcomingSchedules(): Promise<Schedule[]> {
   return (payload.items ?? []).map(toSchedule).filter((event): event is Schedule => Boolean(event));
 }
 
+async function getScheduleUncached(id: string): Promise<Schedule | null> {
+  const supabaseSchedule = await getSupabaseSchedule(id);
+  if (supabaseSchedule) return supabaseSchedule;
+
+  const calendarId = process.env.GOOGLE_CALENDAR_ID;
+  const apiKey = process.env.GOOGLE_CALENDAR_API_KEY;
+  if (calendarId && apiKey) {
+    const endpoint = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(id)}?key=${apiKey}`;
+    const response = await fetch(endpoint, { next: { revalidate: 900 } });
+    if (response.ok) return toSchedule(await response.json() as GoogleEvent);
+  }
+
+  return getDemoUpcomingSchedules().find((schedule) => schedule.id === id) ?? null;
+}
+
 export async function getSchedule(id: string): Promise<Schedule | null> {
-  return (await getUpcomingSchedules()).find((schedule) => schedule.id === id) ?? null;
+  return unstable_cache(
+    () => getScheduleUncached(id),
+    ["live-event-detail", id],
+    { tags: [`live-event-${id}`], revalidate: 3600 },
+  )();
 }

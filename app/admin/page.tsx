@@ -154,6 +154,18 @@ export default function AdminPage() {
     setNotice("");
   }
 
+  async function refreshScheduleCache(client: SupabaseClient<Database>, id: string) {
+    const { data: { session: activeSession } } = await client.auth.getSession();
+    if (!activeSession?.access_token) throw new Error("No active admin session");
+
+    const response = await fetch("/api/admin/revalidate-schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.access_token}` },
+      body: JSON.stringify({ id }),
+    });
+    if (!response.ok) throw new Error("Could not refresh schedule cache");
+  }
+
   async function saveEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const client = getSupabaseBrowserClient();
@@ -177,16 +189,25 @@ export default function AdminPage() {
       updated_at: new Date().toISOString(),
     };
     const result = editingId
-      ? await client.from("live_events").update(payload).eq("id", editingId)
-      : await client.from("live_events").insert(payload);
+      ? await client.from("live_events").update(payload).eq("id", editingId).select("id").single()
+      : await client.from("live_events").insert(payload).select("id").single();
 
-    if (result.error) {
+    if (result.error || !result.data) {
       setNotice("저장하지 못했습니다. 관리자 권한과 필수 항목을 확인해 주세요.");
       setSaving(false);
       return;
     }
 
-    setNotice(editingId ? "공연 정보를 수정했습니다." : "공연을 등록했습니다.");
+    try {
+      await refreshScheduleCache(client, result.data.id);
+    } catch {
+      setNotice("공연 정보는 저장됐지만 사이트 갱신에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setSaving(false);
+      await loadAdminState(client);
+      return;
+    }
+
+    setNotice(editingId ? "공연 정보를 수정하고 사이트에 바로 반영했습니다." : "공연을 등록하고 사이트에 바로 반영했습니다.");
     setSaving(false);
     setEditingId(null);
     setDraft(emptyDraft);
@@ -198,8 +219,17 @@ export default function AdminPage() {
     const client = getSupabaseBrowserClient();
     if (!client) return;
     const { error } = await client.from("live_events").delete().eq("id", id);
-    setNotice(error ? "삭제하지 못했습니다." : "공연을 삭제했습니다.");
-    if (!error) await loadAdminState(client);
+    if (error) {
+      setNotice("삭제하지 못했습니다.");
+      return;
+    }
+    try {
+      await refreshScheduleCache(client, id);
+      setNotice("공연을 삭제하고 사이트에 바로 반영했습니다.");
+    } catch {
+      setNotice("공연은 삭제됐지만 사이트 갱신에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+    await loadAdminState(client);
   }
 
   if (configurationMissing) return <main className="admin-page admin-login"><Link className="logo" href="/">LACRIMA</Link><section><p className="eyebrow">SETUP REQUIRED</p><h1>SUPABASE<br /><i>NOT FOUND.</i></h1><p>Vercel 환경 변수 등록 후 새 배포가 필요합니다.</p></section></main>;
