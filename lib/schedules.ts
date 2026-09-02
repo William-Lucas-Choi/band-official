@@ -113,14 +113,10 @@ function toSchedule(event: GoogleEvent): Schedule | null {
   };
 }
 
-export async function getUpcomingSchedules(): Promise<Schedule[]> {
-  const supabaseSchedules = await getSupabaseUpcomingSchedules();
-  if (supabaseSchedules?.length) return supabaseSchedules;
-
+async function getGoogleUpcomingSchedules(): Promise<Schedule[] | null> {
   const calendarId = process.env.GOOGLE_CALENDAR_ID;
   const apiKey = process.env.GOOGLE_CALENDAR_API_KEY;
-
-  if (!calendarId || !apiKey) return getDemoUpcomingSchedules();
+  if (!calendarId || !apiKey) return null;
 
   const params = new URLSearchParams({
     key: apiKey,
@@ -131,26 +127,28 @@ export async function getUpcomingSchedules(): Promise<Schedule[]> {
   });
   const endpoint = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
   const response = await fetch(endpoint, { next: { revalidate: 900 } });
-
-  if (!response.ok) return getDemoUpcomingSchedules();
+  if (!response.ok) return null;
 
   const payload = (await response.json()) as { items?: GoogleEvent[] };
   return (payload.items ?? []).map(toSchedule).filter((event): event is Schedule => Boolean(event));
 }
 
+export async function getUpcomingSchedules(): Promise<Schedule[]> {
+  const supabaseSchedules = await getSupabaseUpcomingSchedules();
+  if (supabaseSchedules?.length) return supabaseSchedules;
+
+  return (await getGoogleUpcomingSchedules()) ?? getDemoUpcomingSchedules();
+}
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 async function getScheduleUncached(id: string): Promise<Schedule | null> {
-  const supabaseSchedule = await getSupabaseSchedule(id);
-  if (supabaseSchedule) return supabaseSchedule;
+  const demoSchedule = getDemoUpcomingSchedules().find((schedule) => schedule.id === id);
+  if (demoSchedule) return demoSchedule;
 
-  const calendarId = process.env.GOOGLE_CALENDAR_ID;
-  const apiKey = process.env.GOOGLE_CALENDAR_API_KEY;
-  if (calendarId && apiKey) {
-    const endpoint = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(id)}?key=${apiKey}`;
-    const response = await fetch(endpoint, { next: { revalidate: 900 } });
-    if (response.ok) return toSchedule(await response.json() as GoogleEvent);
-  }
+  if (uuidPattern.test(id)) return getSupabaseSchedule(id);
 
-  return getDemoUpcomingSchedules().find((schedule) => schedule.id === id) ?? null;
+  return (await getGoogleUpcomingSchedules())?.find((schedule) => schedule.id === id) ?? null;
 }
 
 export async function getSchedule(id: string): Promise<Schedule | null> {
