@@ -54,6 +54,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [configurationMissing, setConfigurationMissing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [syncingCalendar, setSyncingCalendar] = useState(false);
 
   async function loadAdminState(client: SupabaseClient<Database>) {
     const { data: { session: nextSession } } = await client.auth.getSession();
@@ -166,6 +167,30 @@ export default function AdminPage() {
     if (!response.ok) throw new Error("Could not refresh schedule cache");
   }
 
+  async function syncGoogleCalendar() {
+    const client = getSupabaseBrowserClient();
+    if (!client) return;
+    const { data: { session: activeSession } } = await client.auth.getSession();
+    if (!activeSession?.access_token) return;
+
+    setSyncingCalendar(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/calendar/sync", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${activeSession.access_token}` },
+      });
+      const result = (await response.json().catch(() => ({}))) as { synced?: number; error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Calendar sync failed");
+      setNotice(`Google Calendar 일정 ${result.synced ?? 0}개를 동기화하고 사이트에 반영했습니다.`);
+      await loadAdminState(client);
+    } catch {
+      setNotice("Google Calendar 동기화에 실패했습니다. 환경 변수와 캘린더 설정을 확인해 주세요.");
+    } finally {
+      setSyncingCalendar(false);
+    }
+  }
+
   async function saveEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const client = getSupabaseBrowserClient();
@@ -240,5 +265,5 @@ export default function AdminPage() {
 
   if (!isAdmin) return <main className="admin-page admin-login"><Link className="logo" href="/">LACRIMA</Link><section><p className="eyebrow">ACCESS DENIED</p><h1>NOT<br /><i>AUTHORIZED.</i></h1><p>{notice || "이 계정은 아직 관리자로 등록되지 않았습니다."}</p><button className="admin-button" type="button" onClick={signOut}>SIGN OUT <span>→</span></button></section></main>;
 
-  return <main className="admin-page"><header className="admin-header"><Link className="logo" href="/">LACRIMA</Link><div><span>{session.user.email}</span><button type="button" onClick={signOut}>SIGN OUT</button></div></header><section className="admin-intro"><p className="eyebrow">ADMIN / LIVE SCHEDULE</p><h1>THE<br /><i>RITUALS.</i></h1><p>공연을 등록하고 공개 여부를 관리합니다. 공개한 공연만 사이트에 표시됩니다.</p></section><section className="admin-grid"><form className="event-form" onSubmit={saveEvent}><div className="form-heading"><p>{editingId ? "EDIT LIVE" : "NEW LIVE"}</p>{editingId && <button type="button" onClick={cancelEdit}>CANCEL</button>}</div><label>공연명<input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} required /></label><label>공연 일시 (JST)<input type="datetime-local" value={draft.startsAt} onChange={(event) => setDraft({ ...draft, startsAt: event.target.value })} required /></label><div className="form-row"><label>공연장<input value={draft.venue} onChange={(event) => setDraft({ ...draft, venue: event.target.value })} required /></label><label>도시<input value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })} required /></label></div><label>상세 내용<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} required rows={6} /></label><label>티켓 URL <span>(선택)</span><input type="url" value={draft.ticketUrl} onChange={(event) => setDraft({ ...draft, ticketUrl: event.target.value })} placeholder="https://" /></label><label className="publish-toggle"><input type="checkbox" checked={draft.published} onChange={(event) => setDraft({ ...draft, published: event.target.checked })} /><span>사이트에 공개</span></label><button className="admin-button" type="submit" disabled={saving}>{saving ? "SAVING…" : editingId ? "SAVE CHANGES" : "ADD LIVE"} <span>→</span></button>{notice && <p className="admin-notice">{notice}</p>}</form><section className="event-list"><div className="form-heading"><p>ALL LIVES</p><span>{events.length}</span></div>{events.length === 0 ? <p className="admin-empty">아직 등록된 공연이 없습니다.</p> : events.map((event) => <article key={event.id}><div><p>{new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(event.starts_at))}</p><h2>{event.title}</h2><span>{event.city} · {event.venue}</span></div><div className="event-actions"><b className={event.published ? "is-published" : ""}>{event.published ? "PUBLISHED" : "DRAFT"}</b><button type="button" onClick={() => beginEdit(event)}>EDIT</button><button type="button" onClick={() => deleteEvent(event.id)}>DELETE</button></div></article>)}</section></section></main>;
+  return <main className="admin-page"><header className="admin-header"><Link className="logo" href="/">LACRIMA</Link><div><button className="calendar-sync-button" type="button" onClick={syncGoogleCalendar} disabled={syncingCalendar}>{syncingCalendar ? "SYNCING…" : "SYNC GOOGLE CALENDAR"}</button><span>{session.user.email}</span><button type="button" onClick={signOut}>SIGN OUT</button></div></header><section className="admin-intro"><p className="eyebrow">ADMIN / LIVE SCHEDULE</p><h1>THE<br /><i>RITUALS.</i></h1><p>공연을 등록하고 공개 여부를 관리합니다. 공개한 공연만 사이트에 표시됩니다.</p></section><section className="admin-grid"><form className="event-form" onSubmit={saveEvent}><div className="form-heading"><p>{editingId ? "EDIT LIVE" : "NEW LIVE"}</p>{editingId && <button type="button" onClick={cancelEdit}>CANCEL</button>}</div><label>공연명<input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} required /></label><label>공연 일시 (JST)<input type="datetime-local" value={draft.startsAt} onChange={(event) => setDraft({ ...draft, startsAt: event.target.value })} required /></label><div className="form-row"><label>공연장<input value={draft.venue} onChange={(event) => setDraft({ ...draft, venue: event.target.value })} required /></label><label>도시<input value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })} required /></label></div><label>상세 내용<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} required rows={6} /></label><label>티켓 URL <span>(선택)</span><input type="url" value={draft.ticketUrl} onChange={(event) => setDraft({ ...draft, ticketUrl: event.target.value })} placeholder="https://" /></label><label className="publish-toggle"><input type="checkbox" checked={draft.published} onChange={(event) => setDraft({ ...draft, published: event.target.checked })} /><span>사이트에 공개</span></label><button className="admin-button" type="submit" disabled={saving}>{saving ? "SAVING…" : editingId ? "SAVE CHANGES" : "ADD LIVE"} <span>→</span></button>{notice && <p className="admin-notice">{notice}</p>}</form><section className="event-list"><div className="form-heading"><p>ALL LIVES</p><span>{events.length}</span></div>{events.length === 0 ? <p className="admin-empty">아직 등록된 공연이 없습니다.</p> : events.map((event) => <article key={event.id}><div><p>{new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(event.starts_at))}</p><h2>{event.title}</h2><span>{event.city} · {event.venue}</span></div><div className="event-actions"><b className={event.published ? "is-published" : ""}>{event.published ? "PUBLISHED" : "DRAFT"}</b><button type="button" onClick={() => beginEdit(event)}>EDIT</button><button type="button" onClick={() => deleteEvent(event.id)}>DELETE</button></div></article>)}</section></section></main>;
 }

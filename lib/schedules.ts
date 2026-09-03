@@ -113,16 +113,18 @@ function toSchedule(event: GoogleEvent): Schedule | null {
   };
 }
 
-async function getGoogleUpcomingSchedules(): Promise<Schedule[] | null> {
+async function loadGoogleUpcomingSchedules(): Promise<Schedule[] | null> {
   const calendarId = process.env.GOOGLE_CALENDAR_ID;
   const apiKey = process.env.GOOGLE_CALENDAR_API_KEY;
   if (!calendarId || !apiKey) return null;
 
+  const cacheWindow = 15 * 60 * 1000;
+  const timeMin = new Date(Math.floor(Date.now() / cacheWindow) * cacheWindow).toISOString();
   const params = new URLSearchParams({
     key: apiKey,
     singleEvents: "true",
     orderBy: "startTime",
-    timeMin: new Date().toISOString(),
+    timeMin,
     maxResults: "50",
   });
   const endpoint = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
@@ -131,6 +133,16 @@ async function getGoogleUpcomingSchedules(): Promise<Schedule[] | null> {
 
   const payload = (await response.json()) as { items?: GoogleEvent[] };
   return (payload.items ?? []).map(toSchedule).filter((event): event is Schedule => Boolean(event));
+}
+
+const getCachedGoogleUpcomingSchedules = unstable_cache(
+  loadGoogleUpcomingSchedules,
+  ["google-upcoming-schedules"],
+  { tags: ["google-upcoming-schedules"], revalidate: 900 },
+);
+
+async function getGoogleUpcomingSchedules(): Promise<Schedule[] | null> {
+  return getCachedGoogleUpcomingSchedules();
 }
 
 export async function getUpcomingSchedules(): Promise<Schedule[]> {

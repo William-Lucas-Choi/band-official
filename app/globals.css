@@ -45,3 +45,7 @@ body { font-family:"Noto Sans JP","Space Grotesk",Arial,sans-serif; }
 .nav-links { gap:clamp(18px,2.3vw,38px); }
 .contact-page-content.is-single { grid-template-columns:minmax(0,1fr); }.contact-page-content.is-single>div { padding:70px 11%; }
 @media (max-width:760px) { .contact-page-content.is-single>div { padding:46px 10%; } }
+
+/* Calendar sync */
+.calendar-sync-button { padding:8px 10px; border:1px solid #765258 !important; color:#f4eee6 !important; }.calendar-sync-button:disabled { opacity:.55; cursor:wait !important; }
+@media (max-width:760px) { .calendar-sync-button { padding:6px 8px; font-size:9px !important; } }
